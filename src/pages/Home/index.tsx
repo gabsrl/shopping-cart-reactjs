@@ -22,45 +22,58 @@ interface CartItemsAmount {
 }
 
 const Home = (): JSX.Element => {
-  // const [products, setProducts] = useState<ProductFormatted[]>([]);
-  // const { addProduct, cart } = useCart();
+  const [products, setProducts] = useState<ProductFormatted[]>([]);
+  const { addProduct, cart } = useCart();
 
-  // const cartItemsAmount = cart.reduce((sumAmount, product) => {
-  //   // TODO
-  // }, {} as CartItemsAmount)
-
-  useEffect(() => {
-    async function loadProducts() {
-      // TODO
-    }
-
-    loadProducts();
-  }, []);
-
-  function handleAddProduct(id: number) {
-    // TODO
+  const formatAsProductFormatted = (data: Product[]) => { 
+    const productsFormatted = data.map((product) => ({...product, priceFormatted: formatPrice(product.price) } as ProductFormatted) );
+    return productsFormatted;
   }
+
+  async function handleAddProduct(productId: number) {
+
+    await addProduct(productId);
+  }
+
+  const cartItemsAmount = cart.reduce((sumAmount, product) => {
+    let { id, amount } = product;
+    return {...sumAmount, [id]: amount}
+  }, {} as CartItemsAmount);
+
+  useEffect(() => { 
+    async function loadProducts() {
+      const response = await api.get<Product[]>(`/products`);
+      const prodFormatted = formatAsProductFormatted(response.data);
+      setProducts(prodFormatted);
+    }
+    loadProducts();
+  }, [])
 
   return (
     <ProductList>
-      <li>
-        <img src="https://rocketseat-cdn.s3-sa-east-1.amazonaws.com/modulo-redux/tenis1.jpg" alt="Tênis de Caminhada Leve Confortável" />
-        <strong>Tênis de Caminhada Leve Confortável</strong>
-        <span>R$ 179,90</span>
-        <button
-          type="button"
-          data-testid="add-product-button"
-        // onClick={() => handleAddProduct(product.id)}
-        >
-          <div data-testid="cart-product-quantity">
-            <MdAddShoppingCart size={16} color="#FFF" />
-            {/* {cartItemsAmount[product.id] || 0} */} 2
-          </div>
+      {
+        products.map(productItemFormatted => (
+          <li key={productItemFormatted.id}>
+            <img src={productItemFormatted.image} alt="Tênis de Caminhada Leve Confortável" />
+            <strong>{productItemFormatted.title}</strong>
+            <span>{productItemFormatted.priceFormatted}</span>
+            <button
+              type="button"
+              data-testid="add-product-button"
+            onClick={() => handleAddProduct(productItemFormatted.id)}
+            >
+              <div data-testid="cart-product-quantity">
+                <MdAddShoppingCart size={16} color="#FFF" />
+                {cartItemsAmount[productItemFormatted.id] || 0}
+              </div>
 
-          <span>ADICIONAR AO CARRINHO</span>
-        </button>
-      </li>
+              <span>ADICIONAR AO CARRINHO</span>
+            </button>
+          </li>
+        ))
+      }
     </ProductList>
+
   );
 };
 
